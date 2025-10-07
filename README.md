@@ -21,6 +21,8 @@ O sistema foi desenvolvido em Verilog e organizado em dois arquivos principais:
 
 - `codlok.v` - Código principal do sistema
 - `tb_codlok.v` - Testbench para simulação
+- `codlok_top.v` - Módulo topo para FPGA
+- `keypad_controller.v` - Controlador do teclado matricial
 
 ### Estados do Sistema
 
@@ -170,5 +172,108 @@ src/tb_codlok.v:113: $finish called at 25610000 (1ps)
 Simulação concluída! Verifique logs/simulation.log
 ```
 
+## Utilizando na FPGA
+
+### Montagem do Projeto
+
+<img src="assets/FPGA.png" alt="BitDogLab" width="400">
+
+### A pinagem foi baseada nessas imagens para utilizar o adaptador do teclado do kit:
+
+<img src="assets/Imagem_placa_extensao.png" alt="BitDogLab" width="400">
+<img src="assets/Imagem_placa_pinos.png" alt="BitDogLab" width="265">
+<img src="assets/cn3.png" alt="BitDogLab" width="207">
+
+### Arquivo LPF
+
+```
+# Clock
+LOCATE COMP "clk" SITE "P3";
+IOBUFFER PORT "clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "clk" 25.0 MHz;
+
+# LED
+LOCATE COMP "led" SITE "L2";
+IOBUFFER PORT "led" IO_TYPE=LVCMOS33;
+
+# Keypad Rows (entradas)
+LOCATE COMP "row[0]" SITE "J4";
+IOBUFFER PORT "row[0]" IO_TYPE=LVCMOS33;
+LOCATE COMP "row[1]" SITE "J5";
+IOBUFFER PORT "row[1]" IO_TYPE=LVCMOS33;
+LOCATE COMP "row[2]" SITE "A2";
+IOBUFFER PORT "row[2]" IO_TYPE=LVCMOS33;
+LOCATE COMP "row[3]" SITE "K4";
+IOBUFFER PORT "row[3]" IO_TYPE=LVCMOS33;
+
+# Keypad Columns (saídas)
+LOCATE COMP "col[0]" SITE "B3";
+IOBUFFER PORT "col[0]" IO_TYPE=LVCMOS33;
+LOCATE COMP "col[1]" SITE "E19";
+IOBUFFER PORT "col[1]" IO_TYPE=LVCMOS33;
+LOCATE COMP "col[2]" SITE "K3";
+IOBUFFER PORT "col[2]" IO_TYPE=LVCMOS33;
+LOCATE COMP "col[3]" SITE "K5";
+IOBUFFER PORT "col[3]" IO_TYPE=LVCMOS33;
+```
+## Como Utilizar
+
+**Síntese com Yosys**
+
+```
+yosys -p "read_verilog src/codlok.v src/keypad_controller.v src/codlok_top.v; synth_ecp5 -json build/codlok.json -abc9"
+```
+
+**Place & Route com NextPnR**
+```
+nextpnr-ecp5 --json build/codlok.json --lpf codlok.lpf --textcfg build/codlok.config --package CABGA381 --45k --speed 6
+```
+
+**Gerar Bitstream**
+```
+ecppack --compress --input build/codlok.config --bit build/codlok.bit
+```
+
+**Carregar na FPGA**
+```
+openFPGALoader -b colorlight-i9 build/codlok.bit
+```
 
 
+## Vídeo do Funcionamento
+
+[Assista ao vídeo demonstrativo](https://www.youtube.com/watch?v=rOIuPmm22Kc)
+
+## Observações e Desafios
+
+Infelizmente, só consegui fazer o sistema funcionar uma vez (como mostrado no vídeo). O funcionamento não foi consistente, indicando possíveis problemas:
+
+Pinagem incorreta - Mapeamento dos pinos pode não estar adequado
+
+Placa extensora - Possível incompatibilidade com o adaptador do teclado
+
+Timing issues - Problemas de sincronização com o teclado
+
+Soluções Alternativas
+Caso os problemas persistam, as alternativas são:
+
+Conexão direta - Ligar fios diretamente nos pinos da FPGA
+
+Teste com LEDs - Verificar individualmente cada pino
+
+Multímetro - Confirmar continuidade dos circuitos
+
+## Estrutura do Projeto
+
+```
+lab99-ProjetoFinal-wallaceeBenites/
+├── src/
+│   ├── codlok.v              # Código principal
+│   ├── codlok_top.v          # Módulo topo FPGA
+│   ├── keypad_controller.v   # Controlador teclado
+│   └── tb_codlok.v           # Testbench
+├── assets/                   # Imagens e recursos
+├── codlok.lpf               # Configuração pinos
+├── Makefile                 # Automação
+└── README.md               # Documentação
+```
