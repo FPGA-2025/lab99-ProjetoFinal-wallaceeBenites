@@ -17,7 +17,7 @@ Wallace Ribeiro Benites
 
 ### Estrutura do Código
 
-O sistema foi desenvolvido em Verilog e organizado em dois arquivos principais:
+O sistema foi desenvolvido em Verilog e organizado em quatro arquivos principais:
 
 - `codlok.v` - Código principal do sistema
 - `tb_codlok.v` - Testbench para simulação
